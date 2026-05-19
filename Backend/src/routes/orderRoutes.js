@@ -1,0 +1,17 @@
+const express = require("express");
+
+const {
+  cancelMyOrder,
+  createOrder,
+  getMyOrders,
+} = require("../controllers/orderController");
+const { protect } = require("../middleware/authMiddleware");
+
+const router = express.Router();
+
+router.use(protect);
+router.post("/", createOrder);
+router.get("/mine", getMyOrders);
+router.patch("/:id/cancel", cancelMyOrder);
+
+module.exports = router;
