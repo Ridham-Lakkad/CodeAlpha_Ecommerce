@@ -65,6 +65,20 @@ const Layout = ({ children, navigate }) => {
   const [pinError, setPinError] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
 
+  const resolveLocationFromPinCode = (sanitizedPinCode, apiData) => {
+    if (pinCodeToLocation[sanitizedPinCode]) {
+      return pinCodeToLocation[sanitizedPinCode];
+    }
+
+    const postOffice = apiData?.[0]?.PostOffice?.[0];
+
+    if (postOffice?.Name) {
+      return `${postOffice.Name} ${sanitizedPinCode}`;
+    }
+
+    return `Pincode ${sanitizedPinCode}`;
+  };
+
   useEffect(() => {
     localStorage.setItem("apna-bazaar-location", selectedLocation);
   }, [selectedLocation]);
@@ -100,24 +114,30 @@ const Layout = ({ children, navigate }) => {
     setPinLoading(true);
 
     try {
-      const res = await fetch(`https://api.postalpincode.in/pincode/${sanitized}`);
-      const data = await res.json();
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
-      if (!Array.isArray(data) || data.length === 0 || data[0].Status !== "Success") {
-        setSelectedLocation(`Pincode ${sanitized}`);
-      } else {
-        const postOffice = data[0].PostOffice?.[0];
-        if (postOffice) {
-          setSelectedLocation(`${postOffice.Name} ${sanitized}`);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${sanitized}`, {
+          signal: controller.signal,
+        });
+        const data = await res.json();
+
+        if (Array.isArray(data) && data[0]?.Status === "Success") {
+          setSelectedLocation(resolveLocationFromPinCode(sanitized, data));
         } else {
-          setSelectedLocation(`Pincode ${sanitized}`);
+          setSelectedLocation(resolveLocationFromPinCode(sanitized));
         }
+      } finally {
+        window.clearTimeout(timeoutId);
       }
 
       setLocationModalOpen(false);
       setPinCode("");
     } catch (error) {
-      setPinError("Unable to verify pincode right now. Please try again.");
+      setSelectedLocation(resolveLocationFromPinCode(sanitized));
+      setLocationModalOpen(false);
+      setPinCode("");
     } finally {
       setPinLoading(false);
     }

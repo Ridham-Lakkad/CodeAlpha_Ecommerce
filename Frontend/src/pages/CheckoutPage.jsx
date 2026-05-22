@@ -9,10 +9,10 @@ const CheckoutPage = ({ navigate }) => {
   const { clearCart, items, subtotal } = useCart();
   const [form, setForm] = useState({
     fullName: user?.name || "",
-    addressLine: "",
-    city: "",
-    postalCode: "",
-    country: "India",
+    addressLine: user?.addressLine || "",
+    city: user?.city || "",
+    postalCode: user?.postalCode || "",
+    country: user?.country || "India",
   });
   const [error, setError] = useState("");
 
@@ -31,6 +31,19 @@ const CheckoutPage = ({ navigate }) => {
           shippingAddress: form,
         }),
       });
+
+      await request("/auth/me", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: form.fullName,
+          addressLine: form.addressLine,
+          city: form.city,
+          postalCode: form.postalCode,
+          country: form.country,
+        }),
+      });
+
       clearCart();
       navigate("/orders");
     } catch (requestError) {
