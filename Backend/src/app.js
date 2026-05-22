@@ -7,8 +7,40 @@ const notFound = require("./middleware/notFound");
 
 const app = express();
 
+const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, "");
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  if (frontendUrl && origin === frontendUrl) {
+    return true;
+  }
+
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return true;
+    }
+
+    return hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+};
+
 app.use(cors({
-  origin: "https://code-alpha-ecommerce-3atoq1i97-ridhams-projects-456f5490.vercel.app",
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(null, false);
+  },
   credentials: true
 }));
 app.use(express.json());
