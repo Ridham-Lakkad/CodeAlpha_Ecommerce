@@ -66,14 +66,21 @@ const Layout = ({ children, navigate }) => {
   const [pinLoading, setPinLoading] = useState(false);
 
   const resolveLocationFromPinCode = (sanitizedPinCode, apiData) => {
-    if (pinCodeToLocation[sanitizedPinCode]) {
-      return pinCodeToLocation[sanitizedPinCode];
-    }
-
     const postOffice = apiData?.[0]?.PostOffice?.[0];
 
-    if (postOffice?.Name) {
-      return `${postOffice.Name} ${sanitizedPinCode}`;
+    if (postOffice) {
+      const locationParts = [postOffice.Name, postOffice.District, postOffice.State].filter(
+        Boolean,
+      );
+
+      if (locationParts.length > 0) {
+        const uniqueLocationParts = [...new Set(locationParts)];
+        return `${uniqueLocationParts.join(", ")} ${sanitizedPinCode}`;
+      }
+    }
+
+    if (pinCodeToLocation[sanitizedPinCode]) {
+      return pinCodeToLocation[sanitizedPinCode];
     }
 
     return `Pincode ${sanitizedPinCode}`;
